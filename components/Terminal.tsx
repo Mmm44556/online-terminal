@@ -211,17 +211,9 @@ export default function TerminalComponent({
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="terminal-container absolute bottom-0 left-0 right-0 flex flex-col w-full border overflow-hidden"
-      style={{ height: `${terminalHeight}px` }}
-    >
+    <div className="terminal-container h-full">
       {/* 控制欄 */}
-      <div
-        className="flex items-center justify-between px-2 py-1 border-b peer cursor-row-resize"
-        ref={resizerRef}
-        onMouseDown={handleMouseDown}
-      >
+      <div className="flex items-center justify-between px-2 py-1 border-b">
         <div className="flex items-center space-x-1 overflow-x-auto [&_*]:transition-colors [&_*]:duration-150 [&_*]:ease-in-out">
           {tabs.map((tab) => (
             <div
@@ -255,15 +247,10 @@ export default function TerminalComponent({
         </div>
       </div>
 
-      <div className="w-full h-1.5   peer-hover:bg-gray-300">
-        <div className="w-full h-1 " />
-      </div>
-
       {/* 終端實際容器 */}
       <div
         ref={terminalRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden bg-black"
-        style={{ minHeight: 0 }}
+        className="flex-1 h-full overflow-y-auto overflow-x-hidden bg-black"
       />
     </div>
   );

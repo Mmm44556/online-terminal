@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -17,18 +16,20 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import ThemeSwitch from "@/components/ThemeSwitch";
-
+import { MonacoEditor } from "@/components/monaco-editor";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 const TerminalComponent = dynamic(() => import("@/components/Terminal"), {
   ssr: false,
 });
+
 export default function Page() {
-  const { theme, setTheme } = useTheme();
   const [files, setFiles] = useState<any[]>([]);
+
   return (
-    <SidebarProvider className="">
+    <SidebarProvider>
       <AppSidebar setFiles={setFiles} files={files} />
 
       <SidebarInset>
@@ -56,20 +57,20 @@ export default function Page() {
             </Breadcrumb>
           </div>
           <div className="flex items-center">
-            <ThemeSwitch
-              onCheckedChange={() =>
-                setTheme(theme === "dark" ? "light" : "dark")
-              }
-            />
+            <ThemeSwitch />
           </div>
         </header>
-        <div className="grid h-full">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-          </div>
-          <TerminalComponent setFiles={setFiles} />
+
+        <div className="h-[calc(100vh-4rem)]">
+          <PanelGroup direction="vertical">
+            <Panel defaultSize={60} minSize={30}>
+              {/* <MonacoEditor /> */}
+            </Panel>
+            <PanelResizeHandle className="h-1 bg-border hover:bg-primary/50 transition-colors" />
+            <Panel minSize={40}>
+              <TerminalComponent setFiles={setFiles} />
+            </Panel>
+          </PanelGroup>
         </div>
       </SidebarInset>
     </SidebarProvider>
