@@ -4,14 +4,22 @@ import WebcontainerInstance from "@/system/webContainer";
 import "@/system/startServer";
 import "@xterm/xterm/css/xterm.css";
 import dynamic from "next/dynamic";
+import { useQueryClient } from "@tanstack/react-query";
+import { writeFile } from "@/app/actions";
+
 const TerminalComponent = dynamic(() => import("@/components/Terminal"), {
   ssr: false,
 });
-async function writeIndexJS(content: string) {
-  await WebcontainerInstance?.fs.writeFile("/index.js", content);
-}
+
 export default function Home() {
   const [code, setCode] = useState("");
+  const queryClient = useQueryClient();
+
+  const handleCodeChange = async (newCode: string) => {
+    setCode(newCode);
+    await writeFile("/index.js", newCode);
+    queryClient.invalidateQueries({ queryKey: ["files"] });
+  };
 
   return (
     <>
@@ -30,14 +38,9 @@ export default function Home() {
       <div>
         <button
           onClick={() =>
-            WebcontainerInstance?.fs
-              .readdir("/", {
-                // withFileTypes: true,
-              })
-              .then((res) => {
-                console.log(res);
-                // setCode(res);
-              })
+            WebcontainerInstance?.fs.readdir("/").then((res) => {
+              console.log(res);
+            })
           }
         >
           Write File
@@ -46,10 +49,7 @@ export default function Home() {
       <textarea
         className=""
         value={code}
-        onChange={(e) => {
-          setCode(e.target.value);
-          writeIndexJS(e.target.value);
-        }}
+        onChange={(e) => handleCodeChange(e.target.value)}
       />
       <TerminalComponent />
     </>

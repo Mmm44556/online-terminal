@@ -19,19 +19,18 @@ import {
 import ThemeSwitch from "@/components/ThemeSwitch";
 
 import dynamic from "next/dynamic";
-import { getFiles } from "@/app/actions";
-import { Suspense } from "react";
+import { useState } from "react";
+
 const TerminalComponent = dynamic(() => import("@/components/Terminal"), {
   ssr: false,
 });
 export default function Page() {
   const { theme, setTheme } = useTheme();
-  const systems = getFiles();
+  const [files, setFiles] = useState<any[]>([]);
   return (
     <SidebarProvider className="">
-      <Suspense fallback={<div>Loading...</div>}>
-        <AppSidebar systems={systems} />
-      </Suspense>
+      <AppSidebar setFiles={setFiles} files={files} />
+
       <SidebarInset>
         <header className="flex h-16 shrink-0 justify-between items-center gap-2 border-b px-4">
           <div className="flex items-center gap-2">
@@ -70,7 +69,7 @@ export default function Page() {
             <div className="bg-muted/50 aspect-video rounded-xl" />
             <div className="bg-muted/50 aspect-video rounded-xl" />
           </div>
-          <TerminalComponent />
+          <TerminalComponent setFiles={setFiles} />
         </div>
       </SidebarInset>
     </SidebarProvider>

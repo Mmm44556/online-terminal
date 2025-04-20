@@ -1,5 +1,12 @@
 "use client";
-import { use, ComponentProps, Suspense } from "react";
+import {
+  use,
+  ComponentProps,
+  Suspense,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import { ChevronRight, File, Folder } from "lucide-react";
 import {
   Collapsible,
@@ -20,8 +27,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { ContextMenuContainer } from "./ConextDemo";
-import { getFiles } from "@/app/actions";
-
+import { getFiles, getDirectoryContents } from "@/app/actions";
 // This is sample data.
 const data = {
   changes: [
@@ -67,10 +73,28 @@ const data = {
 };
 
 interface AppSidebarProps extends ComponentProps<typeof Sidebar> {
-  systems: Promise<string[] | undefined>;
+  setFiles: React.Dispatch<React.SetStateAction<any[]>>;
+  files: any[];
 }
-export function AppSidebar({ systems, ...props }: AppSidebarProps) {
-  const files = use(systems);
+export function AppSidebar({ setFiles, files, ...props }: AppSidebarProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 初始加載文件列表
+  useEffect(() => {
+    const loadFiles = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getFiles();
+        setFiles(data);
+      } catch (error) {
+        console.error("Error loading files:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadFiles();
+  }, []);
+
   return (
     <Sidebar {...props}>
       <SidebarContent>
@@ -80,9 +104,11 @@ export function AppSidebar({ systems, ...props }: AppSidebarProps) {
             <SidebarGroupContent className="h-full">
               <SidebarMenu>
                 <Suspense fallback={<div>Loading...</div>}>
-                  {files?.map((item, index) => (
-                    <Tree key={index} item={item} />
-                  ))}
+                  {isLoading ? (
+                    <div>Loading...</div>
+                  ) : (
+                    files.map((item, index) => <Tree key={index} item={item} />)
+                  )}
                 </Suspense>
               </SidebarMenu>
             </SidebarGroupContent>
@@ -96,13 +122,20 @@ export function AppSidebar({ systems, ...props }: AppSidebarProps) {
 
 interface TreeProps {
   item: string | any[];
+  path?: string;
 }
-function Tree({ item }: TreeProps) {
+
+function Tree({ item, path = "." }: TreeProps) {
   const [name, ...items] = Array.isArray(item) ? item : [item];
-  if (!items.length) {
+
+  const fullPath = path === "." ? `/${name}` : `${path}/${name}`;
+  const isDirectory = items.length > 0 && Array.isArray(items[0]);
+  if (name === null) return null;
+
+  if (!isDirectory) {
     return (
       <SidebarMenuButton
-        isActive={name === "button.tsx"}
+        isActive={false}
         className="data-[active=true]:bg-transparent"
       >
         <File />
@@ -113,10 +146,7 @@ function Tree({ item }: TreeProps) {
 
   return (
     <SidebarMenuItem>
-      <Collapsible
-        className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90"
-        defaultOpen={name === "components" || name === "ui"}
-      >
+      <Collapsible className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90">
         <CollapsibleTrigger asChild>
           <SidebarMenuButton>
             <ChevronRight className="transition-transform" />
@@ -126,8 +156,8 @@ function Tree({ item }: TreeProps) {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarMenuSub>
-            {items.map((subItem, index) => (
-              <Tree key={index} item={subItem} />
+            {items[0].map((subItem: any, index: number) => (
+              <Tree key={index} item={subItem} path={fullPath} />
             ))}
           </SidebarMenuSub>
         </CollapsibleContent>

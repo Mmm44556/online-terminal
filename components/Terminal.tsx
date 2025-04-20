@@ -9,7 +9,9 @@ import WebcontainerInstance from "@/system/webContainer";
 import { WebContainerProcess } from "@webcontainer/api";
 import "@/system/startServer";
 import "@xterm/xterm/css/xterm.css";
-
+import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { getFiles } from "@/app/actions";
 interface ShellTab {
   id: string;
   process: WebContainerProcess | undefined;
@@ -18,7 +20,13 @@ interface ShellTab {
   fitAddon: FitAddon;
 }
 
-export default function TerminalComponent() {
+interface TerminalComponentProps {
+  setFiles: React.Dispatch<React.SetStateAction<any[]>>;
+}
+export default function TerminalComponent({
+  setFiles,
+}: TerminalComponentProps) {
+  const queryClient = useQueryClient();
   const terminalRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const resizerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +48,7 @@ export default function TerminalComponent() {
     });
 
     const fitAddon = new FitAddon();
+    setFitAddon(fitAddon);
     const clipboardAddon = new ClipboardAddon();
     newTerminal.loadAddon(fitAddon);
     newTerminal.loadAddon(clipboardAddon);
@@ -52,6 +61,12 @@ export default function TerminalComponent() {
       },
     });
 
+    // 監聽文件系統變化
+    WebcontainerInstance?.fs.watch(".", { recursive: true }, () => {
+      getFiles().then((newFiles) => {
+        setFiles(newFiles);
+      });
+    });
     if (newProcess) {
       // 獲取輸入流的 writer
       const writer = newProcess.input.getWriter();
@@ -69,11 +84,7 @@ export default function TerminalComponent() {
       newProcess.output.pipeTo(
         new WritableStream({
           write(data) {
-            if (data.includes("\x1b[2J\x1b[H")) {
-              newTerminal.clear();
-            } else {
-              newTerminal.write(data);
-            }
+            newTerminal.write(data);
           },
         })
       );
@@ -158,6 +169,19 @@ export default function TerminalComponent() {
     initializeShell();
   }, [WebcontainerInstance]);
 
+  // Add keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl + Shift + `
+      if (e.ctrlKey && e.shiftKey && e.key === "`") {
+        e.preventDefault();
+        createNewShell();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   // 處理拖拉調整大小的邏輯
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -193,21 +217,26 @@ export default function TerminalComponent() {
       style={{ height: `${terminalHeight}px` }}
     >
       {/* 控制欄 */}
-      <div className="flex items-center justify-between px-2 py-1 border-b">
-        <div className="flex items-center space-x-1 overflow-x-auto">
+      <div
+        className="flex items-center justify-between px-2 py-1 border-b peer cursor-row-resize"
+        ref={resizerRef}
+        onMouseDown={handleMouseDown}
+      >
+        <div className="flex items-center space-x-1 overflow-x-auto [&_*]:transition-colors [&_*]:duration-150 [&_*]:ease-in-out">
           {tabs.map((tab) => (
             <div
               key={tab.id}
-              className={`flex items-center px-3 py-1 text-sm rounded-t cursor-pointer ${
-                activeTabId === tab.id
-                  ? "bg-gray-200 text-gray-900"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-150"
-              }`}
+              data-active={activeTabId === tab.id}
+              className={cn(
+                "flex items-center px-3 py-1 text-sm rounded-t cursor-pointer group",
+                "data-[active=true]:bg-gray-200 data-[active=true]:text-gray-900",
+                "data-[active=false]:bg-gray-100 data-[active=false]:text-gray-600 data-[active=false]:hover:bg-gray-150"
+              )}
               onClick={() => switchTab(tab.id)}
             >
               <span>Shell</span>
               <button
-                className="ml-2 text-gray-500 hover:text-gray-700"
+                className="ml-2 text-gray-500 hover:text-gray-700 group-hover:cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeShell(tab.id);
@@ -219,26 +248,21 @@ export default function TerminalComponent() {
           ))}
           <button
             onClick={createNewShell}
-            className="px-2 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded"
+            className="px-2 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded cursor-pointer"
           >
             + New Shell
           </button>
         </div>
       </div>
 
-      {/* 拖拉控制元素 */}
-      <div
-        ref={resizerRef}
-        onMouseDown={handleMouseDown}
-        className="w-full h-1.5 cursor-row-resize flex justify-center items-center group"
-      >
-        <div className="w-full h-1 group-hover:bg-gray-300" />
+      <div className="w-full h-1.5   peer-hover:bg-gray-300">
+        <div className="w-full h-1 " />
       </div>
 
       {/* 終端實際容器 */}
       <div
         ref={terminalRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden"
+        className="flex-1 overflow-y-auto overflow-x-hidden bg-black"
         style={{ minHeight: 0 }}
       />
     </div>

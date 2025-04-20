@@ -17,31 +17,48 @@ import {
 } from "@/components/ui/context-menu";
 import WebcontainerInstance from "@/system/webContainer";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { writeFile, deleteFile, createDirectory } from "@/app/actions";
+
 interface ContextMenuContainerProps {
   children: React.ReactNode;
 }
 
 export function ContextMenuContainer({ children }: ContextMenuContainerProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const handleFileOperation = async (operation: () => Promise<void>) => {
+    await operation();
+    queryClient.invalidateQueries({ queryKey: ["files"] });
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger className="h-full">{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-64 [&]:!animate-none ">
         <ContextMenuItem
           inset
-          onSelect={async () => {
-            await WebcontainerInstance?.fs.writeFile("/test.txt", "test");
-            router.refresh();
-          }}
+          onSelect={() =>
+            handleFileOperation(() => writeFile("/test.txt", "test"))
+          }
         >
           Create File
           <ContextMenuShortcut>⌘[</ContextMenuShortcut>
         </ContextMenuItem>
-        <ContextMenuItem inset disabled>
+        <ContextMenuItem
+          inset
+          onSelect={() =>
+            handleFileOperation(() => createDirectory("/new-folder"))
+          }
+        >
           Create Folder
           <ContextMenuShortcut>⌘]</ContextMenuShortcut>
         </ContextMenuItem>
-        <ContextMenuItem inset>
+        <ContextMenuItem
+          inset
+          onSelect={() => handleFileOperation(() => deleteFile("/test.txt"))}
+        >
           Delete
           <ContextMenuShortcut>⌘R</ContextMenuShortcut>
         </ContextMenuItem>
