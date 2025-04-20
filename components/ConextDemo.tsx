@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   ContextMenu,
@@ -14,32 +14,40 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu"
-
+} from "@/components/ui/context-menu";
+import WebcontainerInstance from "@/system/webContainer";
+import { useRouter } from "next/navigation";
 interface ContextMenuContainerProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function ContextMenuContainer({ children }: ContextMenuContainerProps) {
+  const router = useRouter();
   return (
     <ContextMenu>
-      <ContextMenuTrigger className='h-full'>{children}</ContextMenuTrigger>
-      <ContextMenuContent className='w-64 [&]:!animate-none  '>
-        <ContextMenuItem inset>
-          Back
+      <ContextMenuTrigger className="h-full">{children}</ContextMenuTrigger>
+      <ContextMenuContent className="w-64 [&]:!animate-none ">
+        <ContextMenuItem
+          inset
+          onSelect={async () => {
+            await WebcontainerInstance?.fs.writeFile("/test.txt", "test");
+            router.refresh();
+          }}
+        >
+          Create File
           <ContextMenuShortcut>⌘[</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem inset disabled>
-          Forward
+          Create Folder
           <ContextMenuShortcut>⌘]</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem inset>
-          Reload
+          Delete
           <ContextMenuShortcut>⌘R</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuSub>
           <ContextMenuSubTrigger inset>More Tools</ContextMenuSubTrigger>
-          <ContextMenuSubContent className='w-48 '>
+          <ContextMenuSubContent className="w-48 ">
             <ContextMenuItem>
               Save Page As...
               <ContextMenuShortcut>⇧⌘S</ContextMenuShortcut>
@@ -57,15 +65,15 @@ export function ContextMenuContainer({ children }: ContextMenuContainerProps) {
         </ContextMenuCheckboxItem>
         <ContextMenuCheckboxItem>Show Full URLs</ContextMenuCheckboxItem>
         <ContextMenuSeparator />
-        <ContextMenuRadioGroup value='pedro'>
+        <ContextMenuRadioGroup value="pedro">
           <ContextMenuLabel inset>People</ContextMenuLabel>
           <ContextMenuSeparator />
-          <ContextMenuRadioItem value='pedro'>
+          <ContextMenuRadioItem value="pedro">
             Pedro Duarte
           </ContextMenuRadioItem>
-          <ContextMenuRadioItem value='colm'>Colm Tuite</ContextMenuRadioItem>
+          <ContextMenuRadioItem value="colm">Colm Tuite</ContextMenuRadioItem>
         </ContextMenuRadioGroup>
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }
