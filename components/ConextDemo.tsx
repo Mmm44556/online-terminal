@@ -15,11 +15,22 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import WebcontainerInstance from "@/system/webContainer";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { writeFile, deleteFile, createDirectory } from "@/app/actions";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "./ui/button";
+import { useState } from "react";
 interface ContextMenuContainerProps {
   children: React.ReactNode;
 }
@@ -27,6 +38,8 @@ interface ContextMenuContainerProps {
 export function ContextMenuContainer({ children }: ContextMenuContainerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
 
   const handleFileOperation = async (operation: () => Promise<void>) => {
     await operation();
@@ -34,63 +47,80 @@ export function ContextMenuContainer({ children }: ContextMenuContainerProps) {
   };
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger className="h-full">{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-64 [&]:!animate-none ">
-        <ContextMenuItem
-          inset
-          onSelect={() =>
-            handleFileOperation(() => writeFile("/test.txt", "test"))
-          }
-        >
-          Create File
-          <ContextMenuShortcut>⌘[</ContextMenuShortcut>
-        </ContextMenuItem>
-        <ContextMenuItem
-          inset
-          onSelect={() =>
-            handleFileOperation(() => createDirectory("/new-folder"))
-          }
-        >
-          Create Folder
-          <ContextMenuShortcut>⌘]</ContextMenuShortcut>
-        </ContextMenuItem>
-        <ContextMenuItem
-          inset
-          onSelect={() => handleFileOperation(() => deleteFile("/test.txt"))}
-        >
-          Delete
-          <ContextMenuShortcut>⌘R</ContextMenuShortcut>
-        </ContextMenuItem>
-        <ContextMenuSub>
-          <ContextMenuSubTrigger inset>More Tools</ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-48 ">
-            <ContextMenuItem>
-              Save Page As...
-              <ContextMenuShortcut>⇧⌘S</ContextMenuShortcut>
-            </ContextMenuItem>
-            <ContextMenuItem>Create Shortcut...</ContextMenuItem>
-            <ContextMenuItem>Name Window...</ContextMenuItem>
-            <ContextMenuSeparator />
-            <ContextMenuItem>Developer Tools</ContextMenuItem>
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        <ContextMenuSeparator />
-        <ContextMenuCheckboxItem checked>
-          Show Bookmarks Bar
-          <ContextMenuShortcut>⌘⇧B</ContextMenuShortcut>
-        </ContextMenuCheckboxItem>
-        <ContextMenuCheckboxItem>Show Full URLs</ContextMenuCheckboxItem>
-        <ContextMenuSeparator />
-        <ContextMenuRadioGroup value="pedro">
-          <ContextMenuLabel inset>People</ContextMenuLabel>
-          <ContextMenuSeparator />
-          <ContextMenuRadioItem value="pedro">
-            Pedro Duarte
-          </ContextMenuRadioItem>
-          <ContextMenuRadioItem value="colm">Colm Tuite</ContextMenuRadioItem>
-        </ContextMenuRadioGroup>
-      </ContextMenuContent>
-    </ContextMenu>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger className="h-full" asChild>
+          {children}
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-64 [&]:!animate-none [&>div]:cursor-pointer [&>div]:hover:bg-gray-100 dark:[&>div]:hover:bg-gray-800">
+          <ContextMenuItem
+            inset
+            onSelect={() => {
+              // handleFileOperation(() => writeFile("/test.txt", "test"));
+              setTitle("Create File");
+              setOpen(true);
+            }}
+          >
+            Create File
+          </ContextMenuItem>
+          <ContextMenuItem
+            inset
+            onSelect={() => {
+              // handleFileOperation(() => createDirectory("/new-folder"));
+              setTitle("Create Folder");
+              setOpen(true);
+            }}
+          >
+            Create Folder
+          </ContextMenuItem>
+          <ContextMenuItem
+            inset
+            onSelect={() => {
+              // handleFileOperation(() => deleteFile("/test.txt"));
+              setTitle("Delete File");
+              setOpen(true);
+            }}
+          >
+            Delete
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+      <CreateDialog
+        onSubmit={() => {}}
+        title={title}
+        open={open}
+        setOpen={setOpen}
+      />
+    </>
+  );
+}
+
+interface CreateDialogProps {
+  onSubmit: (name: string) => void;
+  title: string;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}
+function CreateDialog({ onSubmit, title, open, setOpen }: CreateDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription></DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">
+              Name
+            </Label>
+            <Input id="name" value="Pedro Duarte" className="col-span-3" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button type="submit">Save changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

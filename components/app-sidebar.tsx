@@ -26,24 +26,27 @@ import {
   SidebarMenuSub,
   SidebarRail,
 } from "@/components/ui/sidebar";
+
+import {
+  ContextMenu,
+  ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { ContextMenuContainer } from "./ConextDemo";
 import { getFiles, getDirectoryContents } from "@/app/actions";
+import WebcontainerInstance from "@/system/webContainer";
 // This is sample data.
 const data = {
-  changes: [
-    {
-      file: "README.md",
-      state: "M",
-    },
-    {
-      file: "api/hello/route.ts",
-      state: "U",
-    },
-    {
-      file: "app/layout.tsx",
-      state: "M",
-    },
-  ],
   tree: [
     [
       "app",
@@ -75,8 +78,17 @@ const data = {
 interface AppSidebarProps extends ComponentProps<typeof Sidebar> {
   setFiles: React.Dispatch<React.SetStateAction<any[]>>;
   files: any[];
+  setSelectedFile: React.Dispatch<
+    React.SetStateAction<{ path: string; content: string } | null>
+  >;
 }
-export function AppSidebar({ setFiles, files, ...props }: AppSidebarProps) {
+
+export function AppSidebar({
+  setFiles,
+  files,
+  setSelectedFile,
+  ...props
+}: AppSidebarProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   // 初始加載文件列表
@@ -98,21 +110,29 @@ export function AppSidebar({ setFiles, files, ...props }: AppSidebarProps) {
   return (
     <Sidebar {...props}>
       <SidebarContent>
-        <SidebarGroup className="h-full relative">
-          <ContextMenuContainer>
-            <SidebarGroupLabel>Files</SidebarGroupLabel>
-            <SidebarGroupContent className="h-full">
+        <SidebarGroup className="flex flex-col h-full">
+          <SidebarGroupLabel className="whitespace-nowrap overflow-hidden text-ellipsis">
+            Files
+          </SidebarGroupLabel>
+          <SidebarGroupContent className="flex-1">
+            <ContextMenuContainer>
               <SidebarMenu>
                 <Suspense fallback={<div>Loading...</div>}>
                   {isLoading ? (
                     <div>Loading...</div>
                   ) : (
-                    files.map((item, index) => <Tree key={index} item={item} />)
+                    files.map((item, index) => (
+                      <Tree
+                        key={index}
+                        item={item}
+                        setSelectedFile={setSelectedFile}
+                      />
+                    ))
                   )}
                 </Suspense>
               </SidebarMenu>
-            </SidebarGroupContent>
-          </ContextMenuContainer>
+            </ContextMenuContainer>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarRail />
@@ -123,20 +143,40 @@ export function AppSidebar({ setFiles, files, ...props }: AppSidebarProps) {
 interface TreeProps {
   item: string | any[];
   path?: string;
+  setSelectedFile: React.Dispatch<
+    React.SetStateAction<{ path: string; content: string } | null>
+  >;
 }
 
-function Tree({ item, path = "." }: TreeProps) {
+function Tree({ item, path = ".", setSelectedFile }: TreeProps) {
   const [name, ...items] = Array.isArray(item) ? item : [item];
 
   const fullPath = path === "." ? `/${name}` : `${path}/${name}`;
   const isDirectory = items.length > 0 && Array.isArray(items[0]);
   if (name === null) return null;
 
+  const handleFileClick = async () => {
+    try {
+      if (!WebcontainerInstance) {
+        console.error("WebContainer not initialized");
+        return;
+      }
+      const content = await WebcontainerInstance.fs.readFile(
+        fullPath.slice(1),
+        "utf-8"
+      );
+      setSelectedFile({ path: fullPath, content });
+    } catch (error) {
+      console.error("Error loading file content:", error);
+    }
+  };
+
   if (!isDirectory) {
     return (
       <SidebarMenuButton
         isActive={false}
-        className="data-[active=true]:bg-transparent"
+        className="data-[active=true]:bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800"
+        onClick={handleFileClick}
       >
         <File />
         {name}
@@ -146,7 +186,7 @@ function Tree({ item, path = "." }: TreeProps) {
 
   return (
     <SidebarMenuItem>
-      <Collapsible className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90">
+      <Collapsible className="group/collapsible [&[data-state=open]>button>svg:first-child]:rotate-90 hover:bg-gray-100 dark:hover:bg-gray-800">
         <CollapsibleTrigger asChild>
           <SidebarMenuButton>
             <ChevronRight className="transition-transform" />
@@ -157,7 +197,12 @@ function Tree({ item, path = "." }: TreeProps) {
         <CollapsibleContent>
           <SidebarMenuSub>
             {items[0].map((subItem: any, index: number) => (
-              <Tree key={index} item={subItem} path={fullPath} />
+              <Tree
+                key={index}
+                item={subItem}
+                path={fullPath}
+                setSelectedFile={setSelectedFile}
+              />
             ))}
           </SidebarMenuSub>
         </CollapsibleContent>

@@ -1,57 +1,95 @@
 "use client";
-import { useState } from "react";
-import WebcontainerInstance from "@/system/webContainer";
-import "@/system/startServer";
-import "@xterm/xterm/css/xterm.css";
+
+import { AppSidebar } from "@/components/app-sidebar";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import ThemeSwitch from "@/components/ThemeSwitch";
+import { MonacoEditor } from "@/components/monaco-editor";
 import dynamic from "next/dynamic";
-import { useQueryClient } from "@tanstack/react-query";
-import { writeFile } from "@/app/actions";
+import { useState } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { ThemeProvider } from "next-themes";
 
 const TerminalComponent = dynamic(() => import("@/components/Terminal"), {
   ssr: false,
 });
 
-export default function Home() {
-  const [code, setCode] = useState("");
-  const queryClient = useQueryClient();
-
-  const handleCodeChange = async (newCode: string) => {
-    setCode(newCode);
-    await writeFile("/index.js", newCode);
-    queryClient.invalidateQueries({ queryKey: ["files"] });
-  };
-
+export default function Page() {
+  const [files, setFiles] = useState<any[]>([]);
+  const [selectedFile, setSelectedFile] = useState<{
+    path: string;
+    content: string;
+  } | null>(null);
   return (
-    <>
-      <iframe
-        ref={(ref) => {
-          WebcontainerInstance?.on(
-            "server-ready",
-            (port: number, url: string) => {
-              if (ref) {
-                ref.src = url;
-              }
-            }
-          );
-        }}
-      ></iframe>
-      <div>
-        <button
-          onClick={() =>
-            WebcontainerInstance?.fs.readdir("/").then((res) => {
-              console.log(res);
-            })
-          }
-        >
-          Write File
-        </button>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <div className="min-h-screen flex flex-col">
+        <SidebarProvider>
+          <AppSidebar
+            setFiles={setFiles}
+            files={files}
+            setSelectedFile={setSelectedFile}
+          />
+
+          <SidebarInset>
+            <header className="flex h-16 shrink-0 justify-between items-center gap-2 border-b px-4">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger />
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink href="#">components</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem className="hidden md:block">
+                      <BreadcrumbLink href="#">ui</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>
+                        {selectedFile?.path || "No file selected"}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+              <div className="flex items-center">
+                <ThemeSwitch />
+              </div>
+            </header>
+
+            <div className="flex-1 overflow-hidden">
+              <PanelGroup direction="vertical">
+                <Panel defaultSize={60} minSize={30}>
+                  <MonacoEditor
+                    value={selectedFile?.content || ""}
+                    path={selectedFile?.path || ""}
+                  />
+                </Panel>
+                <PanelResizeHandle className="h-1 bg-border hover:bg-primary/50 transition-colors" />
+                <Panel minSize={5} maxSize={50}>
+                  <TerminalComponent setFiles={setFiles} />
+                </Panel>
+              </PanelGroup>
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
       </div>
-      <textarea
-        className=""
-        value={code}
-        onChange={(e) => handleCodeChange(e.target.value)}
-      />
-      <TerminalComponent />
-    </>
+    </ThemeProvider>
   );
 }
