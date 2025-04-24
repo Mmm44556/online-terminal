@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
@@ -10,7 +10,6 @@ import { WebContainerProcess } from "@webcontainer/api";
 import "@/system/startServer";
 import "@xterm/xterm/css/xterm.css";
 import { cn } from "@/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { getFiles } from "@/app/actions";
 interface ShellTab {
   id: string;
@@ -26,15 +25,10 @@ interface TerminalComponentProps {
 export default function TerminalComponent({
   setFiles,
 }: TerminalComponentProps) {
-  const queryClient = useQueryClient();
   const terminalRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const resizerRef = useRef<HTMLDivElement>(null);
-  const [fitAddon, setFitAddon] = useState<FitAddon | null>(null);
-  const [terminalHeight, setTerminalHeight] = useState(300);
   const [tabs, setTabs] = useState<ShellTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string>("");
-  const createNewShell = async () => {
+  const createNewShell = useCallback(async () => {
     if (!terminalRef.current) return;
 
     const newTabId = `shell-${Date.now()}`;
@@ -48,7 +42,6 @@ export default function TerminalComponent({
     });
 
     const fitAddon = new FitAddon();
-    setFitAddon(fitAddon);
     const clipboardAddon = new ClipboardAddon();
     newTerminal.loadAddon(fitAddon);
     newTerminal.loadAddon(clipboardAddon);
@@ -109,7 +102,7 @@ export default function TerminalComponent({
       newTerminal.open(terminalRef.current);
       fitAddon.fit();
     }
-  };
+  }, [setFiles,tabs]);
 
   const showTerminal = (tab: ShellTab) => {
     if (!terminalRef.current) return;
@@ -167,7 +160,7 @@ export default function TerminalComponent({
       }
     };
     initializeShell();
-  }, [WebcontainerInstance]);
+  }, [createNewShell, tabs]);
 
   // Add keyboard shortcut handler
   useEffect(() => {
@@ -181,7 +174,7 @@ export default function TerminalComponent({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [createNewShell]);
 
   return (
     <div className="terminal-container h-full">

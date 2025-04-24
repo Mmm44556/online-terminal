@@ -2,22 +2,10 @@
 
 import {
   ContextMenu,
-  ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuRadioGroup,
-  ContextMenuRadioItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
-import { writeFile, deleteFile, createDirectory } from "@/app/actions";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,15 +23,13 @@ interface ContextMenuContainerProps {
 }
 
 export function ContextMenuContainer({ children }: ContextMenuContainerProps) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
 
-  const handleFileOperation = async (operation: () => Promise<void>) => {
-    await operation();
-    queryClient.invalidateQueries({ queryKey: ["files"] });
-  };
+  // const handleFileOperation = async (operation: () => Promise<void>) => {
+  //   await operation();
+  //   queryClient.invalidateQueries({ queryKey: ["files"] });
+  // };
 
   return (
     <>
@@ -101,7 +86,7 @@ interface CreateDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
 }
-function CreateDialog({ onSubmit, title, open, setOpen }: CreateDialogProps) {
+function CreateDialog({ title, open, setOpen }: CreateDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[425px]">

@@ -1,12 +1,5 @@
 "use client";
-import {
-  use,
-  ComponentProps,
-  Suspense,
-  useState,
-  useCallback,
-  useEffect,
-} from "react";
+import { ComponentProps, Suspense, useState, useEffect } from "react";
 import { ChevronRight, File, Folder } from "lucide-react";
 import {
   Collapsible,
@@ -20,60 +13,44 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-import {
-  ContextMenu,
-  ContextMenuCheckboxItem,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuRadioGroup,
-  ContextMenuRadioItem,
-  ContextMenuSeparator,
-  ContextMenuShortcut,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import { ContextMenuContainer } from "./ConextDemo";
-import { getFiles, getDirectoryContents } from "@/app/actions";
+import { getFiles } from "@/app/actions";
 import WebcontainerInstance from "@/system/webContainer";
 // This is sample data.
-const data = {
-  tree: [
-    [
-      "app",
-      [
-        "api",
-        ["hello", ["route.ts"]],
-        "page.tsx",
-        "layout.tsx",
-        ["blog", ["page.tsx"]],
-      ],
-    ],
-    [
-      "components",
-      ["ui", "button.tsx", "card.tsx"],
-      "header.tsx",
-      "footer.tsx",
-    ],
-    ["lib", ["util.ts"]],
-    ["public", "favicon.ico", "vercel.svg"],
-    ".eslintrc.json",
-    ".gitignore",
-    "next.config.js",
-    "tailwind.config.js",
-    "package.json",
-    "README.md",
-  ],
-};
+// const data = {
+//   tree: [
+//     [
+//       "app",
+//       [
+//         "api",
+//         ["hello", ["route.ts"]],
+//         "page.tsx",
+//         "layout.tsx",
+//         ["blog", ["page.tsx"]],
+//       ],
+//     ],
+//     [
+//       "components",
+//       ["ui", "button.tsx", "card.tsx"],
+//       "header.tsx",
+//       "footer.tsx",
+//     ],
+//     ["lib", ["util.ts"]],
+//     ["public", "favicon.ico", "vercel.svg"],
+//     ".eslintrc.json",
+//     ".gitignore",
+//     "next.config.js",
+//     "tailwind.config.js",
+//     "package.json",
+//     "README.md",
+//   ],
+// };
 
 interface AppSidebarProps extends ComponentProps<typeof Sidebar> {
   setFiles: React.Dispatch<React.SetStateAction<any[]>>;
@@ -105,7 +82,7 @@ export function AppSidebar({
       }
     };
     loadFiles();
-  }, []);
+  }, [setIsLoading, setFiles]);
 
   return (
     <Sidebar {...props}>
